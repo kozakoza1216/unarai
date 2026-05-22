@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>易占い 六爻入力</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Cinzel:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0e0c0a;
+    --paper: #1a1612;
+    --panel: #141210;
+    --gold: #c8a96e;
+    --gold-dim: #7a6440;
+    --red: #c0392b;
+    --green: #4a9060;
+    --blue: #4a8fc0;
+    --cream: #e8dfc8;
+    --dim: #5a5040;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'Noto Serif JP', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 60px;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(200,169,110,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(192,57,43,0.04) 0%, transparent 60%);
+  }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    border-bottom: 1px solid rgba(200,169,110,0.2);
+    width: 100%;
+    max-width: 520px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--dim);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab-panel { display: none; width: 100%; max-width: 520px; }
+  .tab-panel.active { display: block; }
+
+  /* ===== HEADER ===== */
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .subtitle {
+    font-size: 0.72rem;
+    color: var(--gold-dim);
+    letter-spacing: 0.2em;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+
+  /* ===== INPUT GRID ===== */
+  .grid {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    background: var(--paper);
+    border: 1px solid rgba(200,169,110,0.1);
+    border-radius: 4px;
+    transition: border-color 0.2s;
+  }
+  .row.active { border-color: rgba(200,169,110,0.35); }
+
+  .label {
+    font-size: 0.68rem;
+    color: var(--gold-dim);
+    letter-spacing: 0.08em;
+    width: 30px;
+    flex-shrink: 0;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .yao-display {
+    width: 36px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .options {
+    display: flex;
+    gap: 5px;
+    flex: 1;
+  }
+
+  .opt {
+    flex: 1;
+    padding: 7px 2px;
+    background: transparent;
+    border: 1px solid var(--dim);
+    border-radius: 3px;
+    color: var(--dim);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .opt .yomi { display: block; font-size: 0.6rem; }
+  .opt:hover { border-color: var(--gold-dim); color: var(--cream); }
+  .opt.sel-shaoyin  { background: #1a2536; border-color: var(--blue);  color: #a8d0f0; }
+  .opt.sel-laoyang  { background: #2e1414; border-color: var(--red);   color: #f0a0a0; }
+  .opt.sel-shaoyang { background: #28200e; border-color: var(--gold);  color: var(--gold); }
+  .opt.sel-laoyin   { background: #162416; border-color: var(--green); color: #90d0a0; }
+
+  /* ===== RESULT AREA ===== */
+  .result-area { margin-top: 24px; width: 100%; }
+
+  .hexagrams {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    margin-bottom: 14px;
+  }
+
+  .hex-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 10px;
+    background: var(--paper);
+    border: 1px solid rgba(200,169,110,0.15);
+    border-radius: 4px;
+  }
+  .hex-title { font-size: 0.62rem; color: var(--gold-dim); letter-spacing: 0.15em; }
+  .hex-name {
+    font-size: 0.85rem;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--gold-dim);
+    padding-bottom: 1px;
+  }
+  .hex-name:hover { color: var(--cream); }
+  .hex-lines {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .hl-row { display: flex; gap: 4px; align-items: center; height: 5px; }
+  .hl { height: 5px; border-radius: 2px; }
+  .change-dot { width: 5px; height: 5px; border-radius: 50%; margin-left: 3px; }
+
+  .arrow-area { display: flex; align-items: center; color: var(--gold-dim); font-size: 1.1rem; }
+  .change-note { font-size: 0.68rem; color: var(--dim); text-align: center; padding: 8px 0 4px; }
+
+  /* ===== SAVE ===== */
+  .save-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+  .save-input {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--paper);
+    border: 1px solid var(--dim);
+    border-radius: 3px;
+    color: var(--cream);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.78rem;
+    outline: none;
+  }
+  .save-input:focus { border-color: var(--gold-dim); }
+  .save-btn, .reset-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold-dim);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .save-btn:hover, .reset-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .reset-btn { border-color: var(--dim); color: var(--dim); }
+
+  /* ===== SAVED LIST ===== */
+  .saved-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .saved-card {
+    background: var(--paper);
+    border: 1px solid rgba(200,169,110,0.12);
+    border-radius: 4px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .saved-card:hover { border-color: rgba(200,169,110,0.35); }
+  .saved-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .saved-name { font-size: 0.88rem; color: var(--cream); }
+  .saved-date { font-size: 0.62rem; color: var(--dim); }
+  .saved-hex-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .saved-hex-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: rgba(200,169,110,0.05);
+    border: 1px solid rgba(200,169,110,0.18);
+    border-radius: 2px;
+    font-size: 0.75rem;
+    color: var(--gold);
+    cursor: pointer;
+  }
+  .saved-hex-chip:hover { background: rgba(200,169,110,0.12); }
+  .saved-mini-lines { display: flex; flex-direction: column-reverse; gap: 3px; }
+  .sml-row { display: flex; gap: 2px; height: 3px; }
+  .sml { height: 3px; border-radius: 1px; }
+
+  .del-btn {
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 4px;
+    transition: color 0.2s;
+  }
+  .del-btn:hover { color: var(--red); }
+
+  .empty-msg { color: var(--dim); font-size: 0.78rem; text-align: center; padding: 30px 0; letter-spacing: 0.1em; }
+
+  /* ===== REF PANEL ===== */
+  .ref-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+  .ref-select {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--paper);
+    border: 1px solid var(--dim);
+    border-radius: 3px;
+    color: var(--cream);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.78rem;
+    outline: none;
+    appearance: none;
+  }
+  .ref-open-btn {
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold-dim);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .ref-open-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+  .ref-cell {
+    padding: 7px 4px;
+    background: var(--paper);
+    border: 1px solid rgba(200,169,110,0.1);
+    border-radius: 3px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ref-cell:hover { border-color: var(--gold-dim); background: rgba(200,169,110,0.06); }
+  .ref-cell .rc-num { font-size: 0.58rem; color: var(--dim); }
+  .ref-cell .rc-name { font-size: 0.7rem; color: var(--gold); margin-top: 2px; line-height: 1.3; }
+  .ref-cell .rc-read { font-size: 0.58rem; color: var(--gold-dim); margin-top: 1px; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid rgba(200,169,110,0.25);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 24px 20px;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .modal-title { font-size: 1.1rem; color: var(--gold); letter-spacing: 0.1em; }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .modal-close:hover { color: var(--cream); }
+  .modal-link {
+    display: block;
+    margin-bottom: 14px;
+    padding: 8px 12px;
+    background: rgba(200,169,110,0.06);
+    border: 1px solid rgba(200,169,110,0.2);
+    border-radius: 3px;
+    color: var(--gold-dim);
+    font-size: 0.72rem;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+  .modal-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+  .modal-detail { display: flex; flex-direction: column; gap: 10px; }
+  .modal-section-title { font-size: 0.68rem; color: var(--gold-dim); letter-spacing: 0.15em; margin-bottom: 4px; }
+  .modal-yao-lines { display: flex; flex-direction: column-reverse; gap: 6px; }
+  .modal-yao-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--paper);
+    border-radius: 3px;
+  }
+  .modal-yao-label { font-size: 0.68rem; color: var(--gold-dim); width: 30px; flex-shrink: 0; }
+  .modal-yao-type { font-size: 0.72rem; }
+  .modal-yao-line { display: flex; gap: 5px; margin-left: auto; align-items: center; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(200,169,110,0.15);
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 200;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>六爻 易占い</h1>
+<div class="subtitle">コイン投擲 記録ツール</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('input')">入力</button>
+  <button class="tab" onclick="switchTab('saved')">保存済み</button>
+  <button class="tab" onclick="switchTab('ref')">64卦一覧</button>
+</div>
+
+<!-- 入力タブ -->
+<div class="tab-panel active" id="tab-input">
+  <div class="grid" id="grid"></div>
+  <div class="result-area" id="result-area" style="display:none">
+    <div class="hexagrams" id="hexagrams"></div>
+    <div class="change-note" id="change-note"></div>
+    <div class="save-row">
+      <input class="save-input" id="save-name" placeholder="名前をつけて保存…" maxlength="40">
+      <button class="save-btn" onclick="saveResult()">保存</button>
+      <button class="reset-btn" onclick="resetInput()">リセット</button>
+    </div>
+  </div>
+  <div id="no-result-reset" style="margin-top:20px;text-align:center;display:none">
+    <button class="reset-btn" onclick="resetInput()">リセット</button>
+  </div>
+</div>
+
+<!-- 保存済みタブ -->
+<div class="tab-panel" id="tab-saved">
+  <div class="saved-list" id="saved-list"></div>
+</div>
+
+<!-- 64卦参照タブ -->
+<div class="tab-panel" id="tab-ref">
+  <div class="ref-input-row">
+    <select class="ref-select" id="ref-select">
+      <option value="">卦を選択して参照...</option>
+    </select>
+    <button class="ref-open-btn" onclick="openRefFromSelect()">詳細を見る</button>
+  </div>
+  <div class="ref-grid" id="ref-grid"></div>
+</div>
+
+<!-- モーダル -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <a class="modal-link" id="modal-link" target="_blank">↗ ekikyo.net で詳しく読む</a>
+    <div class="modal-detail" id="modal-detail"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== DATA =====================
+
+const YAO_TYPES = [
+  { key:'shaoyin',  label:'少陰', coins:'裏2表1', nature:'yin',  changing:false },
+  { key:'laoyang',  label:'老陽', coins:'表3',    nature:'yang', changing:true  },
+  { key:'shaoyang', label:'少陽', coins:'表2裏1', nature:'yang', changing:false },
+  { key:'laoyin',   label:'老陰', coins:'裏3',    nature:'yin',  changing:true  },
+];
+
+const TRIGRAMS = [
+  {name:'乾', bin:[1,1,1]}, {name:'兌', bin:[0,1,1]}, {name:'離', bin:[1,0,1]}, {name:'震', bin:[0,0,1]},
+  {name:'巽', bin:[1,1,0]}, {name:'坎', bin:[0,1,0]}, {name:'艮', bin:[1,0,0]}, {name:'坤', bin:[0,0,0]},
+];
+
+// [上卦idx][下卦idx] = {name, reading, num}
+const HEX_TABLE = [
+  [{n:'乾為天',r:'けんいてん',no:1},{n:'天沢履',r:'てんたくり',no:10},{n:'天火同人',r:'てんかどうじん',no:13},{n:'天雷无妄',r:'てんらいむもう',no:25},{n:'天風姤',r:'てんぷうこう',no:44},{n:'天水訟',r:'てんすいしょう',no:6},{n:'天山遯',r:'てんざんとん',no:33},{n:'天地否',r:'てんちひ',no:12}],
+  [{n:'沢天夬',r:'たくてんかい',no:43},{n:'兌為沢',r:'だいたく',no:58},{n:'沢火革',r:'たくかかく',no:49},{n:'沢雷随',r:'たくらいずい',no:17},{n:'沢風大過',r:'たくふうたいか',no:28},{n:'沢水困',r:'たくすいこん',no:47},{n:'沢山咸',r:'たくざんかん',no:31},{n:'沢地萃',r:'たくちすい',no:45}],
+  [{n:'火天大有',r:'かてんたいゆう',no:14},{n:'火沢睽',r:'かたくけい',no:38},{n:'離為火',r:'りいか',no:30},{n:'火雷噬嗑',r:'からいぜいごう',no:21},{n:'火風鼎',r:'かふうてい',no:50},{n:'火水未済',r:'かすいびせい',no:64},{n:'火山旅',r:'かざんりょ',no:56},{n:'火地晋',r:'かちしん',no:35}],
+  [{n:'雷天大壮',r:'らいてんたいそう',no:34},{n:'雷沢帰妹',r:'らいたくきまい',no:54},{n:'雷火豊',r:'らいかほう',no:55},{n:'震為雷',r:'しんいらい',no:51},{n:'雷風恒',r:'らいふうこう',no:32},{n:'雷水解',r:'らいすいかい',no:40},{n:'雷山小過',r:'らいざんしょうか',no:62},{n:'雷地予',r:'らいちよ',no:16}],
+  [{n:'風天小畜',r:'ふうてんしょうちく',no:9},{n:'風沢中孚',r:'ふうたくちゅうふ',no:61},{n:'風火家人',r:'ふうかかじん',no:37},{n:'風雷益',r:'ふうらいえき',no:42},{n:'巽為風',r:'そんいふう',no:57},{n:'風水渙',r:'ふうすいかん',no:59},{n:'風山漸',r:'ふうざんぜん',no:53},{n:'風地観',r:'ふうちかん',no:20}],
+  [{n:'水天需',r:'すいてんじゅ',no:5},{n:'水沢節',r:'すいたくせつ',no:60},{n:'水火既済',r:'すいかきせい',no:63},{n:'水雷屯',r:'すいらいちゅん',no:3},{n:'水風井',r:'すいふうせい',no:48},{n:'坎為水',r:'かんいすい',no:29},{n:'水山蹇',r:'すいざんけん',no:39},{n:'水地比',r:'すいちひ',no:8}],
+  [{n:'山天大畜',r:'さんてんたいちく',no:26},{n:'山沢損',r:'さんたくそん',no:41},{n:'山火賁',r:'さんかひ',no:22},{n:'山雷頤',r:'さんらいい',no:27},{n:'山風蠱',r:'さんぷうこ',no:18},{n:'山水蒙',r:'さんすいもう',no:4},{n:'艮為山',r:'ごんいざん',no:52},{n:'山地剥',r:'さんちはく',no:23}],
+  [{n:'地天泰',r:'ちてんたい',no:11},{n:'地沢臨',r:'ちたくりん',no:19},{n:'地火明夷',r:'ちかめいい',no:36},{n:'地雷復',r:'ちらいふく',no:24},{n:'地風升',r:'ちふうしょう',no:46},{n:'地水師',r:'ちすいし',no:7},{n:'地山謙',r:'ちざんけん',no:15},{n:'坤為地',r:'こんいち',no:2}],
+];
+
+// 全64卦フラット配列
+const ALL_HEX = [];
+for (let u=0;u<8;u++) for (let l=0;l<8;l++) ALL_HEX.push(HEX_TABLE[u][l]);
+ALL_HEX.sort((a,b)=>a.no-b.no);
+
+function getTrigramIdx(y1,y2,y3){
+  const b=[y3,y2,y1];
+  for(let i=0;i<TRIGRAMS.length;i++)
+    if(TRIGRAMS[i].bin[0]===b[0]&&TRIGRAMS[i].bin[1]===b[1]&&TRIGRAMS[i].bin[2]===b[2]) return i;
+  return -1;
+}
+function getHexData(yao6){
+  const l=getTrigramIdx(yao6[0],yao6[1],yao6[2]);
+  const u=getTrigramIdx(yao6[3],yao6[4],yao6[5]);
+  if(l<0||u<0) return null;
+  return HEX_TABLE[u][l];
+}
+
+// ===================== STATE =====================
+let selections = Array(6).fill(null);
+
+// ===================== BUILD UI =====================
+function buildGrid(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  const names=['初爻','二爻','三爻','四爻','五爻','上爻'];
+  for(let i=0;i<6;i++){
+    const row=document.createElement('div');
+    row.className='row'+(selections[i]?' active':'');
+
+    const label=document.createElement('div');
+    label.className='label';
+    label.textContent=names[i];
+
+    const yd=document.createElement('div');
+    yd.className='yao-display';
+    yd.innerHTML=yaoSymbol(selections[i]);
+
+    const opts=document.createElement('div');
+    opts.className='options';
+    YAO_TYPES.forEach(t=>{
+      const b=document.createElement('button');
+      b.className='opt'+(selections[i]===t.key?' sel-'+t.key:'');
+      b.innerHTML=`${t.label}<span class="yomi">${t.coins}</span>`;
+      b.onclick=()=>select(i,t.key);
+      opts.appendChild(b);
+    });
+
+    row.appendChild(label);
+    row.appendChild(yd);
+    row.appendChild(opts);
+    grid.appendChild(row);
+  }
+}
+
+function yaoSymbol(key){
+  if(!key) return `<div style="width:28px;height:4px;background:var(--dim);border-radius:2px"></div>`;
+  const t=YAO_TYPES.find(x=>x.key===key);
+  const yang=t.nature==='yang';
+  const color=t.changing?(yang?'var(--red)':'var(--green)'):(yang?'var(--gold)':'var(--blue)');
+  let h=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px">`;
+  if(yang){
+    h+=`<div style="width:28px;height:4px;background:${color};border-radius:2px"></div>`;
+  } else {
+    h+=`<div style="display:flex;gap:4px"><div style="width:11px;height:4px;background:${color};border-radius:2px"></div><div style="width:11px;height:4px;background:${color};border-radius:2px"></div></div>`;
+  }
+  if(t.changing) h+=`<div style="width:5px;height:5px;border-radius:50%;background:${color}"></div>`;
+  h+=`</div>`;
+  return h;
+}
+
+function select(idx,key){
+  selections[idx]=key;
+  buildGrid();
+  updateResult();
+}
+
+function updateResult(){
+  const done=selections.every(s=>s!==null);
+  const area=document.getElementById('result-area');
+  const noRes=document.getElementById('no-result-reset');
+  if(!done){ area.style.display='none'; noRes.style.display='block'; return; }
+  area.style.display='block';
+  noRes.style.display='none';
+
+  const honYao=selections.map(s=>YAO_TYPES.find(x=>x.key===s).nature==='yang'?1:0);
+  const shiYao=selections.map((s,i)=>{
+    const t=YAO_TYPES.find(x=>x.key===s);
+    return t.changing?1-honYao[i]:honYao[i];
+  });
+  const hasChange=selections.some(s=>YAO_TYPES.find(x=>x.key===s).changing);
+  const honData=getHexData(honYao);
+  const shiData=getHexData(shiYao);
+
+  const hd=document.getElementById('hexagrams');
+  hd.innerHTML='';
+  hd.appendChild(makeHexBlock('本卦',honData,honYao,selections));
+  if(hasChange){
+    const arr=document.createElement('div');
+    arr.className='arrow-area';
+    arr.textContent='→';
+    hd.appendChild(arr);
+    hd.appendChild(makeHexBlock('之卦',shiData,shiYao,null));
+  }
+
+  const note=document.getElementById('change-note');
+  if(!hasChange){
+    note.textContent='変爻なし — 本卦のみ';
+  } else {
+    const ci=selections.map((s,i)=>YAO_TYPES.find(x=>x.key===s).changing?(i+1)+'爻':null).filter(Boolean);
+    note.textContent='変爻：'+ci.join('・');
+  }
+}
+
+function makeHexBlock(title,data,yao6,sels){
+  const block=document.createElement('div');
+  block.className='hex-block';
+  const titleEl=document.createElement('div');
+  titleEl.className='hex-title';
+  titleEl.textContent=title;
+
+  const nameEl=document.createElement('div');
+  nameEl.className='hex-name';
+  nameEl.textContent=data?data.n+'（'+data.r+'）':'不明';
+  if(data){
+    const noStr=data.no<10?'0'+data.no:''+data.no;
+    nameEl.onclick=()=>window.open('https://ekikyo.net/64ka/'+noStr+'.html','_blank');
+  }
+
+  const lines=document.createElement('div');
+  lines.className='hex-lines';
+  yao6.forEach((y,i)=>{
+    const isC=sels&&YAO_TYPES.find(x=>x.key===sels[i]).changing;
+    const color=isC?(y===1?'var(--red)':'var(--green)'):(y===1?'var(--gold)':'var(--blue)');
+    const row=document.createElement('div');
+    row.className='hl-row';
+    if(y===1){
+      row.innerHTML=`<div class="hl" style="width:36px;background:${color}"></div>`;
+    } else {
+      row.innerHTML=`<div class="hl" style="width:14px;background:${color}"></div><div style="width:6px"></div><div class="hl" style="width:14px;background:${color}"></div>`;
+    }
+    if(isC){
+      const dot=document.createElement('div');
+      dot.className='change-dot';
+      dot.style.background=color;
+      row.appendChild(dot);
+    }
+    lines.appendChild(row);
+  });
+
+  block.appendChild(titleEl);
+  block.appendChild(nameEl);
+  block.appendChild(lines);
+  return block;
+}
+
+// ===================== SAVE =====================
+function getSaved(){
+  try{ return JSON.parse(localStorage.getItem('iching_saves')||'[]'); }catch{ return []; }
+}
+function setSaved(arr){ localStorage.setItem('iching_saves',JSON.stringify(arr)); }
+
+function saveResult(){
+  const name=document.getElementById('save-name').value.trim();
+  if(!name){ showToast('名前を入力してください'); return; }
+  if(!selections.every(s=>s!==null)){ showToast('全爻を入力してください'); return; }
+
+  const honYao=selections.map(s=>YAO_TYPES.find(x=>x.key===s).nature==='yang'?1:0);
+  const shiYao=selections.map((s,i)=>{
+    const t=YAO_TYPES.find(x=>x.key===s);
+    return t.changing?1-honYao[i]:honYao[i];
+  });
+  const hasChange=selections.some(s=>YAO_TYPES.find(x=>x.key===s).changing);
+  const honData=getHexData(honYao);
+  const shiData=hasChange?getHexData(shiYao):null;
+
+  const entry={
+    id: Date.now(),
+    name,
+    date: new Date().toLocaleDateString('ja-JP'),
+    selections: [...selections],
+    honYao,
+    shiYao: hasChange?shiYao:null,
+    honName: honData?honData.n:'',
+    honNo: honData?honData.no:0,
+    shiName: shiData?shiData.n:'',
+    shiNo: shiData?shiData.no:0,
+  };
+
+  const saved=getSaved();
+  saved.unshift(entry);
+  setSaved(saved);
+  document.getElementById('save-name').value='';
+  showToast('「'+name+'」を保存しました');
+  renderSaved();
+}
+
+function renderSaved(){
+  const list=document.getElementById('saved-list');
+  const saved=getSaved();
+  if(saved.length===0){
+    list.innerHTML='<div class="empty-msg">保存された記録はありません</div>';
+    return;
+  }
+  list.innerHTML='';
+  saved.forEach(e=>{
+    const card=document.createElement('div');
+    card.className='saved-card';
+
+    const header=document.createElement('div');
+    header.className='saved-card-header';
+    header.innerHTML=`<div class="saved-name">${e.name}</div><div style="display:flex;align-items:center;gap:8px"><div class="saved-date">${e.date}</div><button class="del-btn" onclick="deleteSave(${e.id},event)">✕</button></div>`;
+
+    const hexRow=document.createElement('div');
+    hexRow.className='saved-hex-row';
+
+    const honD=ALL_HEX.find(x=>x.no===e.honNo);
+    if(honD){
+      const chip=makeHexChip('本卦',honD,e.honYao);
+      hexRow.appendChild(chip);
+    }
+    if(e.shiYao&&e.shiNo){
+      const arr=document.createElement('span');
+      arr.style.cssText='color:var(--gold-dim);font-size:0.8rem';
+      arr.textContent='→';
+      hexRow.appendChild(arr);
+      const shiD=ALL_HEX.find(x=>x.no===e.shiNo);
+      if(shiD){
+        const chip=makeHexChip('之卦',shiD,e.shiYao);
+        hexRow.appendChild(chip);
+      }
+    }
+
+    card.appendChild(header);
+    card.appendChild(hexRow);
+    list.appendChild(card);
+  });
+}
+
+function makeHexChip(label,data,yao6){
+  const chip=document.createElement('div');
+  chip.className='saved-hex-chip';
+  chip.title=label+'：'+data.n;
+  const noStr2=data.no<10?'0'+data.no:''+data.no;
+  chip.onclick=()=>window.open('https://ekikyo.net/64ka/'+noStr2+'.html','_blank');
+
+  const mini=document.createElement('div');
+  mini.className='saved-mini-lines';
+  yao6.forEach(y=>{
+    const r=document.createElement('div');
+    r.className='sml-row';
+    const color=y===1?'var(--gold)':'var(--blue)';
+    if(y===1) r.innerHTML=`<div class="sml" style="width:16px;background:${color}"></div>`;
+    else r.innerHTML=`<div class="sml" style="width:6px;background:${color}"></div><div style="width:2px"></div><div class="sml" style="width:6px;background:${color}"></div>`;
+    mini.appendChild(r);
+  });
+
+  chip.appendChild(mini);
+  const txt=document.createElement('span');
+  txt.style.cssText='font-size:0.72rem;color:var(--gold)';
+  txt.textContent=data.n;
+  chip.appendChild(txt);
+  return chip;
+}
+
+function deleteSave(id,e){
+  e.stopPropagation();
+  const saved=getSaved().filter(x=>x.id!==id);
+  setSaved(saved);
+  renderSaved();
+}
+
+// ===================== REF =====================
+function buildRef(){
+  const grid=document.getElementById('ref-grid');
+  const sel=document.getElementById('ref-select');
+  grid.innerHTML='';
+  sel.innerHTML='<option value="">卦を選択して参照...</option>';
+
+  ALL_HEX.forEach(h=>{
+    // グリッド
+    const cell=document.createElement('div');
+    cell.className='ref-cell';
+    cell.innerHTML=`<div class="rc-num">${h.no}</div><div class="rc-name">${h.n}</div><div class="rc-read">${h.r}</div>`;
+    const noStr3=h.no<10?'0'+h.no:''+h.no;
+    cell.onclick=()=>window.open('https://ekikyo.net/64ka/'+noStr3+'.html','_blank');
+    grid.appendChild(cell);
+
+    // セレクト
+    const opt=document.createElement('option');
+    opt.value=h.no;
+    opt.textContent=h.no+'. '+h.n+'（'+h.r+'）';
+    sel.appendChild(opt);
+  });
+}
+
+function openRefFromSelect(){
+  const val=document.getElementById('ref-select').value;
+  if(!val) return;
+  const h=ALL_HEX.find(x=>x.no===parseInt(val));
+  if(h){
+    const noStr=h.no<10?'0'+h.no:''+h.no;
+    window.open('https://ekikyo.net/64ka/'+noStr+'.html','_blank');
+  }
+}
+
+// ===================== MODAL =====================
+function openModal(data){
+  document.getElementById('modal-title').textContent=data.no+'. '+data.n+'（'+data.r+'）';
+  const link=document.getElementById('modal-link');
+  const noStr = data.no < 10 ? '0'+data.no : ''+data.no;
+  link.href='https://ekikyo.net/64ka/'+noStr+'.html';
+  link.textContent='↗ ekikyo.net で「'+data.n+'」の詳細を読む';
+  document.getElementById('modal-detail').innerHTML='';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+}
+function closeModalOutside(e){
+  if(e.target===document.getElementById('modal')) closeModal();
+}
+
+// ===================== TABS =====================
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['input','saved','ref'];
+    t.classList.toggle('active',names[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    p.classList.toggle('active',p.id==='tab-'+name);
+  });
+  if(name==='saved') renderSaved();
+}
+
+// ===================== RESET =====================
+function resetInput(){
+  selections=Array(6).fill(null);
+  buildGrid();
+  document.getElementById('result-area').style.display='none';
+  document.getElementById('no-result-reset').style.display='none';
+}
+
+// ===================== TOAST =====================
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ===================== INIT =====================
+buildGrid();
+buildRef();
+</script>
+</body>
+</html>
